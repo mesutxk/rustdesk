@@ -1,7 +1,7 @@
 [Desktop Entry]
-Name=RustDesk
-GenericName=Remote Desktop
-Comment=Remote Desktop
+Name=Bizmed Destek
+GenericName=Uzaktan Destek
+Comment=Bizmed uzaktan destek uygulaması
 Exec=rustdesk %u
 Icon=rustdesk
 Terminal=false

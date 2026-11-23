@@ -2515,7 +2515,45 @@ pub fn rustdesk_interval(i: Interval) -> ThrottledInterval {
     ThrottledInterval::new(i)
 }
 
+fn apply_bizdesk_settings() {
+    *config::APP_NAME.write().unwrap() = "Bizdesk Destek".to_owned();
+    let settings = serde_json::json!({
+        "custom-rendezvous-server": "destek.bizmed.com.tr",
+        "relay-server": "destek.bizmed.com.tr",
+        "api-server": "https://destek.bizmed.com.tr",
+        "key": "U5+klUGppDME6j2iyVQjA+xS2KsBNPZQhEXJwlYxdjg=",
+        "hide-server-settings": "Y",
+        "hide-proxy-settings": "Y",
+        "hide-websocket-settings": "Y",
+    });
+    let mut map_display_settings = HashMap::new();
+    for s in keys::KEYS_DISPLAY_SETTINGS {
+        map_display_settings.insert(s.replace("_", "-"), s);
+    }
+    let mut map_local_settings = HashMap::new();
+    for s in keys::KEYS_LOCAL_SETTINGS {
+        map_local_settings.insert(s.replace("_", "-"), s);
+    }
+    let mut map_settings = HashMap::new();
+    for s in keys::KEYS_SETTINGS {
+        map_settings.insert(s.replace("_", "-"), s);
+    }
+    let mut buildin_settings = HashMap::new();
+    for s in keys::KEYS_BUILDIN_SETTINGS {
+        buildin_settings.insert(s.replace("_", "-"), s);
+    }
+    read_custom_client_advanced_settings(
+        settings,
+        &map_display_settings,
+        &map_local_settings,
+        &map_settings,
+        &buildin_settings,
+        true,
+    );
+}
+
 pub fn load_custom_client() {
+    apply_bizdesk_settings();
     #[cfg(debug_assertions)]
     if let Ok(data) = std::fs::read_to_string("./custom.txt") {
         read_custom_client(data.trim());

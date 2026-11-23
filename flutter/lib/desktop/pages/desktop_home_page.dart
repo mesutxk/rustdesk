@@ -439,14 +439,11 @@ class _DesktopHomePageState extends State<DesktopHomePage>
         await start_service(true);
       });
     }
-    if (!bind.isCustomClient() &&
-        updateUrl.isNotEmpty &&
-        !isCardClosed &&
-        bind.mainUriPrefixSync().contains('rustdesk')) {
+    if (updateUrl.isNotEmpty && !isCardClosed) {
       final isToUpdate = (isWindows || isMacOS) && bind.mainIsInstalled();
       String btnText = isToUpdate ? 'Update' : 'Download';
       GestureTapCallback onPressed = () async {
-        final Uri url = Uri.parse('https://rustdesk.com/download');
+        final Uri url = Uri.parse('https://destek.bizmed.com.tr/indir');
         await launchUrl(url);
       };
       if (isToUpdate) {
@@ -460,10 +457,8 @@ class _DesktopHomePageState extends State<DesktopHomePage>
           btnText,
           onPressed,
           closeButton: true,
-          help: isToUpdate ? 'Changelog' : null,
-          link: isToUpdate
-              ? 'https://github.com/rustdesk/rustdesk/releases/tag/${bind.mainGetNewVersion()}'
-              : null);
+          help: null,
+          link: null);
     }
     if (systemError.isNotEmpty) {
       return buildInstallCard("", systemError, "", () {});

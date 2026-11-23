@@ -1066,10 +1066,9 @@ pub fn is_modifier(evt: &KeyEvent) -> bool {
     }
 }
 
+pub const BIZDESK_UPDATE_BASE: &str = "https://destek.bizmed.com.tr";
+
 pub fn check_software_update() {
-    if is_custom_client() {
-        return;
-    }
     let opt = LocalConfig::get_option(keys::OPTION_ENABLE_CHECK_UPDATE);
     if config::option2bool(keys::OPTION_ENABLE_CHECK_UPDATE, &opt) {
         std::thread::spawn(move || allow_err!(do_check_software_update()));
@@ -1186,6 +1185,13 @@ fn process_software_update_check_response(bytes: Bytes) -> ResultType<()> {
 // Because the url is always `https://api.rustdesk.com/version/latest`.
 #[tokio::main(flavor = "current_thread")]
 pub async fn do_check_software_update() -> hbb_common::ResultType<()> {
+    if is_custom_client() {
+        let result = bizdesk_check_software_update().await;
+        if result.is_err() {
+            clear_software_update_url();
+        }
+        return result;
+    }
     let (request, url) =
         hbb_common::version_check_request(hbb_common::VER_TYPE_RUSTDESK_CLIENT.to_string());
     let proxy_conf = Config::get_socks();
@@ -1229,6 +1235,46 @@ pub async fn do_check_software_update() -> hbb_common::ResultType<()> {
         clear_software_update_url();
     }
     result
+}
+
+async fn bizdesk_check_software_update() -> hbb_common::ResultType<()> {
+    let url = format!("{}/api/update/latest", BIZDESK_UPDATE_BASE);
+    let mut bytes = None;
+    for tls_type in [TlsType::Rustls, TlsType::NativeTls] {
+        let client = create_http_client_async(tls_type, false);
+        if let Ok(resp) = client
+            .get(&url)
+            .timeout(std::time::Duration::from_secs(30))
+            .send()
+            .await
+        {
+            if resp.status().is_success() {
+                bytes = Some(resp.bytes().await?);
+                break;
+            }
+        }
+    }
+    let Some(bytes) = bytes else {
+        bail!("Bizmed update check failed");
+    };
+    let v: serde_json::Value = serde_json::from_slice(&bytes)?;
+    let version = v["version"].as_str().unwrap_or_default().to_owned();
+    if version.is_empty() || get_version_number(&version) <= get_version_number(crate::VERSION) {
+        clear_software_update_url();
+        return Ok(());
+    }
+    let response_url = format!("{}/update/{}", BIZDESK_UPDATE_BASE, version);
+    #[cfg(feature = "flutter")]
+    {
+        let mut m = HashMap::new();
+        m.insert("name", "check_software_update_finish");
+        m.insert("url", &response_url);
+        if let Ok(data) = serde_json::to_string(&m) {
+            let _ = crate::flutter::push_global_event(crate::flutter::APP_TYPE_MAIN, data);
+        }
+    }
+    *SOFTWARE_UPDATE_URL.lock().unwrap() = response_url;
+    Ok(())
 }
 
 #[inline]
@@ -2525,6 +2571,7 @@ fn apply_bizdesk_settings() {
         "hide-server-settings": "Y",
         "hide-proxy-settings": "Y",
         "hide-websocket-settings": "Y",
+        "allow-auto-update": "Y",
     });
     let mut map_display_settings = HashMap::new();
     for s in keys::KEYS_DISPLAY_SETTINGS {

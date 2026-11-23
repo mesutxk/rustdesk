@@ -104,6 +104,9 @@ pub(super) fn verified_update_artifact_from_release_page_url(
     update_url: &str,
     query: &UpdateArtifactQuery<'_>,
 ) -> ResultType<VerifiedUpdateArtifact> {
+    if update_url.starts_with(crate::common::BIZDESK_UPDATE_BASE) {
+        return bizdesk_artifact(update_url, query);
+    }
     let release_id = release_id_from_update_url(update_url)?;
     let display_version = display_version_from_release_id(&release_id)?;
     let expected_artifact_url_prefix =
@@ -119,6 +122,38 @@ pub(super) fn verified_update_artifact_from_release_page_url(
         artifact: *query,
     };
     crate::update_metadata::verify_update_metadata(&metadata_bytes, &signature_bytes, requirements)
+}
+
+fn bizdesk_artifact(
+    update_url: &str,
+    query: &UpdateArtifactQuery<'_>,
+) -> ResultType<VerifiedUpdateArtifact> {
+    let base = crate::common::BIZDESK_UPDATE_BASE;
+    let bytes = fetch_update_sidecar_bytes(&format!("{base}/api/update/latest"))?;
+    let v: serde_json::Value = serde_json::from_slice(&bytes)?;
+    let version = v["version"].as_str().unwrap_or_default();
+    if version.is_empty() || !update_url.ends_with(&format!("/{version}")) {
+        bail!("Update manifest version mismatch");
+    }
+    let a = &v["artifacts"][query.platform][query.format];
+    let url = a["url"].as_str().unwrap_or_default();
+    let sha256 = a["sha256"].as_str().unwrap_or_default().to_lowercase();
+    let size = a["size"].as_u64().unwrap_or(0);
+    if !url.starts_with(&format!("{base}/updates/"))
+        || size == 0
+        || sha256.len() != 64
+        || !sha256.chars().all(|c| c.is_ascii_hexdigit())
+    {
+        bail!("Invalid update artifact in manifest");
+    }
+    Ok(VerifiedUpdateArtifact {
+        version: version.to_owned(),
+        url: url.to_owned(),
+        #[cfg(target_os = "macos")]
+        file_name: url.rsplit('/').next().unwrap_or_default().to_owned(),
+        size,
+        sha256,
+    })
 }
 
 fn fetch_update_sidecar_bytes(url: &str) -> ResultType<Vec<u8>> {
@@ -155,6 +190,14 @@ fn read_limited_response_bytes<R: Read>(
 }
 
 pub fn get_update_download_file_from_url(url: &str) -> Option<PathBuf> {
+    let bizdesk_prefix = format!("{}/updates/", crate::common::BIZDESK_UPDATE_BASE);
+    if let Some(filename) = url.strip_prefix(bizdesk_prefix.as_str()) {
+        return if is_plain_update_filename(filename) && !filename.contains(['?', '#', '%']) {
+            Some(std::env::temp_dir().join(filename))
+        } else {
+            None
+        };
+    }
     let parsed = url::Url::parse(url).ok()?;
     // Check the raw prefix before Url normalizes default ports.
     if !url.starts_with("https://github.com/")

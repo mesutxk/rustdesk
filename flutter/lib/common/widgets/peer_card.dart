@@ -80,6 +80,14 @@ class _PeerCardState extends State<_PeerCard>
           }
         },
         onLongPress: () => peerTabModel.select(peer),
+        onSecondaryTapDown: (isDesktop || isWebDesktop)
+            ? (e) {
+                final x = e.globalPosition.dx;
+                final y = e.globalPosition.dy;
+                _menuPos = RelativeRect.fromLTRB(x, y, x, y);
+                _showPeerMenu(peer.id);
+              }
+            : null,
         child: child);
   }
 

@@ -474,6 +474,13 @@ jobs:
           path: ./SignOutput/rustdesk-${{ env.VERSION }}-${{ matrix.job.arch }}.msi
           if-no-files-found: error
 
+      - name: Rename outputs
+        if: env.UPLOAD_ARTIFACT == 'true' && env.PUBLISH_UPDATE_METADATA != 'true'
+        shell: bash
+        run: |
+          mv ./SignOutput/rustdesk-*.exe ./SignOutput/BizmedDestek.exe
+          mv ./SignOutput/rustdesk-*.msi ./SignOutput/BizmedDestek.msi
+
       - name: Publish Release
         uses: softprops/action-gh-release@de2c0eb89ae2a093876385947365aca7b0e5f844 # v1
         if: env.UPLOAD_ARTIFACT == 'true' && env.PUBLISH_UPDATE_METADATA != 'true'
@@ -481,7 +488,7 @@ jobs:
           prerelease: true
           tag_name: ${{ env.TAG_NAME }}
           files: |
-            ./SignOutput/rustdesk-*.msi
-            ./SignOutput/rustdesk-*.exe
+            ./SignOutput/BizmedDestek.msi
+            ./SignOutput/BizmedDestek.exe
 
   # The fallback for the flutter version, we use Sciter for 32bit Windows.

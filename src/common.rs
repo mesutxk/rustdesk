@@ -2516,7 +2516,7 @@ pub fn rustdesk_interval(i: Interval) -> ThrottledInterval {
 }
 
 fn apply_bizdesk_settings() {
-    *config::APP_NAME.write().unwrap() = "Bizdesk Destek".to_owned();
+    *config::APP_NAME.write().unwrap() = "Bizmed Destek".to_owned();
     let settings = serde_json::json!({
         "custom-rendezvous-server": "destek.bizmed.com.tr",
         "relay-server": "destek.bizmed.com.tr",

@@ -99,6 +99,7 @@ class PeerPayload {
       "username": p.info['username'] ?? '',
       "platform": _platform(p.info['os']),
       "hostname": p.info['device_name'],
+      "alias": p.info['alias'] ?? '',
       "device_group_name": p.device_group_name,
       "note": p.note,
     });

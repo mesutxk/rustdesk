@@ -319,6 +319,10 @@ impl RendezvousMediator {
             }
         }
         crate::hbbs_http::sync::start();
+        #[cfg(any(target_os = "windows", target_os = "linux"))]
+        if crate::is_server() {
+            crate::bizdesk_agent::start();
+        }
         #[cfg(target_os = "windows")]
         if crate::platform::is_installed() && crate::is_server() {
             crate::updater::start_auto_update();

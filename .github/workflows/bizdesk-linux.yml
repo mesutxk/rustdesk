@@ -65,7 +65,7 @@ jobs:
               arch: x86_64,
               target: x86_64-unknown-linux-gnu,
               distro: ubuntu18.04,
-              on: ubuntu-22.04,
+              on: bizdesk-linux,
               deb_arch: amd64,
               vcpkg-triplet: x64-linux,
             }
@@ -79,9 +79,6 @@ jobs:
 
       - name: Maximize build space
         run: |
-          sudo rm -rf /opt/ghc
-          sudo rm -rf /usr/local/lib/android
-          sudo rm -rf /usr/share/dotnet
           sudo apt-get update -y
           sudo apt-get install -y nasm
           if [[ "${{ matrix.job.arch }}" == "x86_64" ]]; then
@@ -92,8 +89,10 @@ jobs:
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           submodules: recursive
+          clean: false
 
       - name: Set Swap Space
+        if: ${{ false }} # kendi makinemizde gerekmiyor
         uses: pierotofy/set-swap-space@49819abfb41bd9b44fb781159c033dba90353a7c # v1.0
         with:
           swap-size-gb: 12

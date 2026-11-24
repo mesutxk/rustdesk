@@ -408,6 +408,8 @@ jobs:
         shell: bash
         if: env.UPLOAD_ARTIFACT == 'true'
         run: |
+          # Git for Windows ships a GNU link.exe that shadows the MSVC linker in bash; name the linker explicitly.
+          if [ -n "$VCToolsInstallDir" ]; then export CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_LINKER="${VCToolsInstallDir}bin/HostX64/x64/link.exe"; fi
           sed -i '/dpiAware/d' res/manifest.xml
           pushd ./libs/portable
           pip3 install -r requirements.txt

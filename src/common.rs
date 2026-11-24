@@ -2599,6 +2599,42 @@ fn apply_bizdesk_settings() {
     );
 }
 
+// Quick Support (BizmedDestek-qs): son kullanici hicbir ayara mudahale edemez, yalnizca kimlik ve parolayi gorur.
+pub fn apply_bizdesk_qs_settings() {
+    {
+        let mut hard = config::HARD_SETTINGS.write().unwrap();
+        for (k, v) in [
+            ("conn-type", "incoming"),
+            ("disable-settings", "Y"),
+            ("disable-account", "Y"),
+            ("disable-ab", "Y"),
+            ("disable-group-panel", "Y"),
+            ("disable-installation", "Y"),
+        ] {
+            hard.insert(k.to_owned(), v.to_owned());
+        }
+    }
+    {
+        let mut builtin = config::BUILTIN_SETTINGS.write().unwrap();
+        for (k, v) in [
+            ("hide-help-cards", "Y"),
+            ("disable-change-id", "Y"),
+            ("disable-change-permanent-password", "Y"),
+            ("hide-stop-service", "Y"),
+            ("hide-security-settings", "Y"),
+            ("hide-network-settings", "Y"),
+        ] {
+            builtin.insert(k.to_owned(), v.to_owned());
+        }
+    }
+    {
+        let mut overwrite = config::OVERWRITE_SETTINGS.write().unwrap();
+        for (k, v) in [("approve-mode", "password"), ("enable-lan-discovery", "N")] {
+            overwrite.insert(k.to_owned(), v.to_owned());
+        }
+    }
+}
+
 pub fn load_custom_client() {
     apply_bizdesk_settings();
     #[cfg(debug_assertions)]

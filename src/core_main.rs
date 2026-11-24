@@ -69,6 +69,7 @@ pub fn core_main() -> Option<CoreMainAction> {
     let mut _is_elevate = false;
     let mut _is_run_as_system = false;
     let mut _is_quick_support = false;
+    let mut bizdesk_qs = false;
     let mut _is_flutter_invoke_new_connection = false;
     let mut no_server = false;
     let mut arg_exe = Default::default();
@@ -97,6 +98,7 @@ pub fn core_main() -> Option<CoreMainAction> {
                 _is_run_as_system = true;
             } else if arg == "--quick_support" {
                 _is_quick_support = true;
+                bizdesk_qs = true;
             } else if arg == "--no-server" {
                 no_server = true;
             } else {
@@ -177,6 +179,9 @@ pub fn core_main() -> Option<CoreMainAction> {
                 || config::LocalConfig::get_option("pre-elevate-service") == "Y"
                 || (!click_setup && crate::platform::is_elevated(None).unwrap_or(false)));
         crate::portable_service::client::set_quick_support(_is_quick_support);
+    }
+    if bizdesk_qs {
+        crate::common::apply_bizdesk_qs_settings();
     }
     let mut log_name = "".to_owned();
     // Keep portable-service logs under a stable directory name.
@@ -925,5 +930,5 @@ fn parse_silent_install_args(args: &[String]) -> (Option<bool>, bool) {
 #[inline]
 fn is_quick_support_exe(exe: &str) -> bool {
     let exe = exe.to_lowercase();
-    exe.contains("-qs-") || exe.contains("-qs.exe") || exe.contains("_qs.exe")
+    exe.contains("-qs-") || exe.contains("-qs.exe") || exe.contains("_qs.exe") || exe.contains("-qs (")
 }

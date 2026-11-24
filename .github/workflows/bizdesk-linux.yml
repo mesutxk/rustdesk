@@ -423,6 +423,23 @@ jobs:
           ls -la BizmedDestek-*
         shell: bash
 
+      - name: Build quick support bundle (no install, locked UI)
+        if: env.UPLOAD_ARTIFACT == 'true' && matrix.job.arch == 'x86_64'
+        run: |
+          deb=$(ls BizmedDestek-*-x86_64.deb | head -n1)
+          rm -rf qsx qs && mkdir -p qsx qs/BizmedDestek-QS
+          dpkg-deb -x "$deb" qsx
+          cp -a qsx/usr/share/rustdesk qs/BizmedDestek-QS/app
+          {
+            echo '#!/bin/sh'
+            echo 'cd "$(dirname "$(readlink -f "$0")")/app" || exit 1'
+            echo 'exec ./rustdesk --quick_support "$@"'
+          } > qs/BizmedDestek-QS/bizmeddestek-qs
+          chmod +x qs/BizmedDestek-QS/bizmeddestek-qs
+          tar -C qs -czf BizmedDestek-qs-linux-x86_64.tar.gz BizmedDestek-QS
+          ls -la BizmedDestek-qs-linux-x86_64.tar.gz
+        shell: bash
+
       - name: Publish debian/rpm package
         if: env.UPLOAD_ARTIFACT == 'true'
         uses: softprops/action-gh-release@de2c0eb89ae2a093876385947365aca7b0e5f844 # v1
@@ -432,6 +449,7 @@ jobs:
           files: |
             BizmedDestek-*.deb
             BizmedDestek-*.rpm
+            BizmedDestek-qs-linux-*.tar.gz
 
       # x86_64 also uploads on a PR (upload-artifact false), where it is the only way to get at the
       # deb that was just built.

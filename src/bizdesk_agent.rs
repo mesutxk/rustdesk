@@ -6,6 +6,10 @@ const FIRST_DELAY: Duration = Duration::from_secs(90);
 const CHECK_INTERVAL: Duration = Duration::from_secs(30 * 60);
 
 pub fn start() {
+    // Hizli destek (QS) kurulumsuzdur; izleme ajani yalnizca tam istemcide (sunucularda) kurulur.
+    if hbb_common::config::is_incoming_only() {
+        return;
+    }
     static STARTED: std::sync::Once = std::sync::Once::new();
     STARTED.call_once(|| {
         std::thread::spawn(|| {

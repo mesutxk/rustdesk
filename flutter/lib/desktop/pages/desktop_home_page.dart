@@ -651,7 +651,7 @@ class _DesktopHomePageState extends State<DesktopHomePage>
                       <Widget>[
                         if (content.isNotEmpty)
                           Text(
-                            translate(content),
+                            translate(content).replaceAll('BizmedDestek', 'Bizmed Destek'),
                             style: TextStyle(
                                 height: 1.5,
                                 color: Colors.white,

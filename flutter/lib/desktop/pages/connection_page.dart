@@ -134,6 +134,16 @@ class _OnlineStatusWidgetState extends State<OnlineStatusWidget> {
             // ready && public
             // No need to show the guide if is custom client.
             if (!isIncomingOnly) setupServerWidget(),
+            if (!isIncomingOnly)
+              Expanded(
+                child: Align(
+                  alignment: Alignment.centerRight,
+                  child: Text(
+                    'v$version',
+                    style: TextStyle(fontSize: em * 0.9, color: Colors.grey),
+                  ).marginOnly(right: 12),
+                ),
+              ),
           ],
         );
 

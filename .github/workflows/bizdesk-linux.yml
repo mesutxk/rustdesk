@@ -202,6 +202,9 @@ jobs:
           dockerRunArgs: |
             --volume "${PWD}:/workspace"
             --volume "/opt/artifacts:/opt/artifacts"
+            -e CARGO_HOME=/opt/artifacts/cargo-home
+            -e CARGO_NET_RETRY=10
+            -e CARGO_HTTP_TIMEOUT=600
           shell: /bin/bash
           install: |
             apt-get update -y

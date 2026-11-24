@@ -66,7 +66,9 @@ class _ServerAlertsBarState extends State<ServerAlertsBar> {
         if (_alerts.isNotEmpty && mounted) setState(() => _alerts = []);
         return;
       }
-      final api = "${await bind.mainGetApiServer()}/api/alerts";
+      // Sunucu olarak işaretli / izlenen cihazlarda panel boş liste döner (müşteri sunucusunda başka müşterilerin uyarıları görünmesin).
+      final myId = (await bind.mainGetMyId()).replaceAll(" ", "");
+      final api = "${await bind.mainGetApiServer()}/api/alerts?id=$myId";
       final resp = await http.get(Uri.parse(api), headers: getHttpHeaders());
       if (resp.statusCode != 200) return;
       final json = jsonDecode(decode_http_response(resp));

@@ -26,6 +26,7 @@ class _MyGroupState extends State<MyGroup> {
   RxString get searchAccessibleItemNameText =>
       gFFI.groupModel.searchAccessibleItemNameText;
   static TextEditingController searchUserController = TextEditingController();
+  static double _leftWidth = 230;
 
   @override
   Widget build(BuildContext context) {
@@ -66,7 +67,7 @@ class _MyGroupState extends State<MyGroup> {
               border:
                   Border.all(color: Theme.of(context).colorScheme.background)),
           child: Container(
-            width: 150,
+            width: _leftWidth,
             height: double.infinity,
             child: Column(
               children: [
@@ -81,7 +82,25 @@ class _MyGroupState extends State<MyGroup> {
               ],
             ),
           ),
-        ).marginOnly(right: 12.0),
+        ),
+        MouseRegion(
+          cursor: SystemMouseCursors.resizeColumn,
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onHorizontalDragUpdate: (d) => setState(
+                () => _leftWidth = (_leftWidth + d.delta.dx).clamp(150.0, 520.0)),
+            child: SizedBox(
+                width: 12,
+                height: double.infinity,
+                child: Center(
+                    child: Container(
+                        width: 3,
+                        height: 40,
+                        decoration: BoxDecoration(
+                            color: Colors.grey.withOpacity(0.5),
+                            borderRadius: BorderRadius.circular(2))))),
+          ),
+        ),
         Expanded(
           child: Align(
               alignment: Alignment.topLeft,

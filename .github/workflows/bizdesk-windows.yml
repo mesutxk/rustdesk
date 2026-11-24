@@ -114,7 +114,7 @@ jobs:
         shell: pwsh
         run: |
           # The workspace is kept between runs (incremental Rust build); drop only the packaging leftovers.
-          foreach ($d in @("rustdesk", "SignOutput", "flutter\build\windows")) {
+          foreach ($d in @("rustdesk", "SignOutput", "flutter\build\windows", "usbmmidd_v2", "usbmmidd_v2.zip")) {
             if (Test-Path $d) { Remove-Item -Recurse -Force $d; Write-Host "silindi: $d" }
           }
           exit 0

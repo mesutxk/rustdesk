@@ -110,6 +110,17 @@ jobs:
           name: ${{ matrix.job.arch == 'aarch64' && 'bridge-artifact-flutter-3.44' || 'bridge-artifact' }}
           path: ./
 
+      - name: MSVC environment (VS 2022 Build Tools)
+        shell: pwsh
+        run: |
+          $bat = "C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Auxiliary\Build\vcvars64.bat"
+          if (-not (Test-Path $bat)) { Write-Host "vcvars64.bat bulunamadi; hosted ortam varsayiliyor"; exit 0 }
+          $keep = '^(INCLUDE|LIB|LIBPATH|PATH|VCINSTALLDIR|VCToolsInstallDir|WindowsSdkDir|WindowsSDKVersion|UCRTVersion|UniversalCRTSdkDir|VSINSTALLDIR|WindowsLibPath|Platform|VisualStudioVersion)=(.*)$'
+          cmd /c "`"$bat`" >nul && set" | ForEach-Object {
+            if ($_ -match $keep) { "$($Matches[1])=$($Matches[2])" | Out-File -Append -Encoding utf8 $env:GITHUB_ENV }
+          }
+          Write-Host "MSVC ortami ayarlandi"
+
       - name: Install LLVM and Clang
         uses: KyleMayes/install-llvm-action@ebc0426251bc40c7cd31162802432c68818ab8f0 # v2.0.9
         with:

@@ -15,7 +15,9 @@ import '../../models/peer_model.dart';
 import '../../models/platform_model.dart';
 import '../../desktop/widgets/material_mod_popup_menu.dart' as mod_menu;
 import '../../desktop/widgets/popup_menu.dart';
+import 'dart:convert';
 import 'dart:math' as math;
+import 'package:flutter_hbb/utils/http_service.dart' as http;
 
 typedef PopupMenuEntryBuilder = Future<List<mod_menu.PopupMenuEntry<String>>>
     Function(BuildContext);
@@ -1356,6 +1358,12 @@ class MyGroupPeerCard extends BasePeerCard {
     // if (await bind.mainPeerHasPassword(id: peer.id)) {
     //   menuItems.add(_unrememberPasswordAction(peer.id));
     // }
+    menuItems.add(MenuEntryButton<String>(
+      childBuilder: (TextStyle? style) => Text(translate('Edit note'), style: style),
+      proc: () => _editSharedDeviceNote(peer.id),
+      padding: menuPadding,
+      dismissOnClicked: true,
+    ));
     if (gFFI.userModel.userName.isNotEmpty) {
       menuItems.add(_addToAb(peer));
     }
@@ -1614,4 +1622,59 @@ void connectInPeerTab(BuildContext context, Peer peer, PeerTabIndex tab,
       isViewCamera: isViewCamera,
       isTcpTunneling: isTcpTunneling,
       isRDP: isRDP);
+}
+
+
+Future<void> _editSharedDeviceNote(String id) async {
+  final api = "${await bind.mainGetApiServer()}/api/device-note";
+  var current = '';
+  try {
+    final r = await http.get(Uri.parse(api).replace(queryParameters: {'id': id}),
+        headers: getHttpHeaders());
+    current = (jsonDecode(decode_http_response(r))['note'] ?? '').toString();
+  } catch (_) {}
+  final controller = TextEditingController(text: current);
+  var busy = false;
+  gFFI.dialogManager.show((setState, close, context) {
+    submit() async {
+      setState(() => busy = true);
+      try {
+        await http.post(Uri.parse(api),
+            headers: {...getHttpHeaders(), 'Content-Type': 'application/json'},
+            body: jsonEncode({'id': id, 'note': controller.text}));
+        showToast(translate('Successful'));
+        gFFI.groupModel.pull();
+      } catch (e) {
+        showToast(e.toString());
+      }
+      close();
+    }
+
+    return CustomAlertDialog(
+      title: Text(translate('Edit note')),
+      content: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          TextField(
+            controller: controller,
+            autofocus: true,
+            maxLines: 5,
+            minLines: 3,
+            maxLength: 300,
+            decoration: InputDecoration(
+              labelText: translate('Note'),
+              helperText: 'Bu not tüm destek personeli tarafından görülür.',
+            ),
+          ).workaroundFreezeLinuxMint(),
+          if (busy) const LinearProgressIndicator(),
+        ],
+      ),
+      actions: [
+        dialogButton("Cancel", onPressed: close, isOutline: true),
+        dialogButton("OK", onPressed: submit),
+      ],
+      onSubmit: submit,
+      onCancel: close,
+    );
+  });
 }

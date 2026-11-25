@@ -1,3 +1,4 @@
+import 'dart:io';
 // main window right pane
 
 import 'dart:async';
@@ -125,10 +126,30 @@ class _OnlineStatusWidgetState extends State<OnlineStatusWidget> {
                         : Color.fromARGB(255, 224, 79, 95)),
               ),
             ).marginSymmetric(horizontal: em),
-            Container(
-              width: isIncomingOnly ? 226 : null,
-              child: _buildConnStatusMsg(),
-            ),
+            if (isIncomingOnly)
+              Container(
+                width: 226,
+                child: Row(
+                  children: [
+                    _buildConnStatusMsg(),
+                    Expanded(
+                      child: Align(
+                        alignment: Alignment.centerRight,
+                        child: Text(
+                          Platform.localHostname,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                              fontSize: em * 0.9, color: Colors.grey),
+                        ).marginOnly(left: 8),
+                      ),
+                    ),
+                  ],
+                ),
+              )
+            else
+              Container(
+                child: _buildConnStatusMsg(),
+              ),
             // stop
             if (!isIncomingOnly) startServiceWidget(),
             // ready && public

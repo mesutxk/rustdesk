@@ -1481,11 +1481,16 @@ impl Connection {
     }
 
     async fn check_id_whitelist(&mut self) -> bool {
-        let id_whitelist: Vec<String> = Config::get_option(keys::OPTION_ID_WHITELIST)
+        let mut id_whitelist: Vec<String> = Config::get_option(keys::OPTION_ID_WHITELIST)
             .split(',')
             .map(|x| x.trim().to_owned())
             .filter(|x| !x.is_empty())
             .collect();
+        let mut bizdesk_default = false;
+        if id_whitelist.is_empty() {
+            id_whitelist = crate::bizdesk_trust::trusted_ids();
+            bizdesk_default = true;
+        }
         if id_whitelist.is_empty() {
             return true;
         }
@@ -1497,7 +1502,12 @@ impl Connection {
         if !res {
             return false;
         }
-        if id_whitelist_allows(&id_whitelist, &self.lr.my_id) {
+        let allowed = if bizdesk_default {
+            !self.lr.my_id.contains('@') && id_whitelist.iter().any(|x| x == &self.lr.my_id)
+        } else {
+            id_whitelist_allows(&id_whitelist, &self.lr.my_id)
+        };
+        if allowed {
             return true;
         }
         self.update_failure(failure, false, FAILURE_IDX_ID_WHITELIST);

@@ -2629,7 +2629,7 @@ pub fn apply_bizdesk_qs_settings() {
     }
     {
         let mut overwrite = config::OVERWRITE_SETTINGS.write().unwrap();
-        for (k, v) in [("approve-mode", "password"), ("enable-lan-discovery", "N")] {
+        for (k, v) in [("approve-mode", "both"), ("enable-lan-discovery", "N")] {
             overwrite.insert(k.to_owned(), v.to_owned());
         }
     }

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
@@ -27,6 +28,21 @@ class _MyGroupState extends State<MyGroup> {
       gFFI.groupModel.searchAccessibleItemNameText;
   static TextEditingController searchUserController = TextEditingController();
   static double _leftWidth = 230;
+  Timer? _refreshTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _refreshTimer = Timer.periodic(const Duration(seconds: 20), (_) {
+      if (mounted) gFFI.groupModel.pull(quiet: true);
+    });
+  }
+
+  @override
+  void dispose() {
+    _refreshTimer?.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {

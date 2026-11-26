@@ -9,6 +9,8 @@ import 'package:get/get.dart';
 import 'dart:convert';
 import '../utils/http_service.dart' as http;
 
+const kFrequentName = 'Sık kullanılanlar';
+
 class GroupModel {
   final RxBool groupLoading = false.obs;
   final RxString groupLoadError = "".obs;
@@ -85,7 +87,8 @@ class GroupModel {
       tmpUsers.insert(0, user);
     }
     users.value = tmpUsers;
-    if (!users.any((u) => u.name == selectedAccessibleItemName.value) &&
+    if (selectedAccessibleItemName.value != kFrequentName &&
+        !users.any((u) => u.name == selectedAccessibleItemName.value) &&
         !deviceGroups.any((d) => d.name == selectedAccessibleItemName.value)) {
       selectedAccessibleItemName.value = '';
     }

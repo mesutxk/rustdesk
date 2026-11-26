@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_hbb/common/hbbs/hbbs.dart';
 import 'package:flutter_hbb/common/widgets/login.dart';
 import 'package:flutter_hbb/common/widgets/peers_view.dart';
+import 'package:flutter_hbb/models/group_model.dart';
 import 'package:flutter_hbb/models/state_model.dart';
 import 'package:get/get.dart';
 
@@ -215,11 +216,14 @@ class _MyGroupState extends State<MyGroup> {
       }).toList();
       listView(bool isPortrait) => ListView.builder(
           shrinkWrap: isPortrait,
-          itemCount: deviceGroupItems.length + userItems.length,
-          itemBuilder: (context, index) => index < deviceGroupItems.length
-              ? _buildDeviceGroupItem(deviceGroupItems[index])
-              : _buildUserItem(userItems[index - deviceGroupItems.length],
-                  displayNameCount));
+          itemCount: deviceGroupItems.length + userItems.length + 1,
+          itemBuilder: (context, index) => index == 0
+              ? _buildFrequentItem()
+              : index <= deviceGroupItems.length
+                  ? _buildDeviceGroupItem(deviceGroupItems[index - 1])
+                  : _buildUserItem(
+                      userItems[index - 1 - deviceGroupItems.length],
+                      displayNameCount));
       var maxHeight = max(MediaQuery.of(context).size.height / 6, 100.0);
       return Obx(() => stateGlobal.isPortrait.isFalse
           ? listView(false)
@@ -302,6 +306,39 @@ class _MyGroupState extends State<MyGroup> {
         );
       },
     )).marginSymmetric(horizontal: 12).marginOnly(bottom: 6);
+  }
+
+  Widget _buildFrequentItem() {
+    return InkWell(onTap: () {
+      isSelectedDeviceGroup.value = false;
+      selectedAccessibleItemName.value =
+          selectedAccessibleItemName.value == kFrequentName
+              ? ''
+              : kFrequentName;
+      gFFI.groupModel.pull(quiet: true);
+    }, child: Obx(() {
+      final selected = !isSelectedDeviceGroup.value &&
+          selectedAccessibleItemName.value == kFrequentName;
+      return Container(
+        decoration: BoxDecoration(
+          color: selected ? MyTheme.color(context).highlight : null,
+          border: Border(
+              bottom: BorderSide(
+                  width: 0.7,
+                  color: Theme.of(context).dividerColor.withOpacity(0.1))),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 20,
+              height: 20,
+              child: Icon(Icons.star_rounded, color: MyTheme.accent, size: 19),
+            ).marginOnly(right: 4),
+            Expanded(child: Text(kFrequentName)),
+          ],
+        ).paddingSymmetric(vertical: 4),
+      );
+    })).marginSymmetric(horizontal: 12).marginOnly(bottom: 6);
   }
 
   Widget _buildDeviceGroupItem(DeviceGroupPayload deviceGroup) {

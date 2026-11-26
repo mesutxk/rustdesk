@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_hbb/common.dart';
 import 'package:flutter_hbb/common/hbbs/hbbs.dart';
+import 'package:flutter_hbb/common/widgets/peer_card.dart';
+import 'package:flutter_hbb/models/peer_model.dart';
 import 'package:flutter_hbb/desktop/widgets/user_chat.dart';
 import 'package:get/get.dart';
 
@@ -84,10 +86,13 @@ class _UsersPanelState extends State<UsersPanel> {
   Widget _row(BuildContext context, UserPayload user) {
     final online = user.online;
     final hint = Theme.of(context).hintColor;
-    return InkWell(
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onSecondaryTapDown: (d) => _menu(context, user, d.globalPosition),
+      child: InkWell(
       onTap: () => UserChat.open(context, user),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         child: Row(
           children: [
             Container(
@@ -134,6 +139,23 @@ class _UsersPanelState extends State<UsersPanel> {
           ],
         ),
       ),
-    );
+    ));
+  }
+
+  Future<void> _menu(
+      BuildContext context, UserPayload user, Offset pos) async {
+    if (user.deviceId.isEmpty) {
+      showToast('${user.displayNameOrName} için kayıtlı cihaz yok');
+      return;
+    }
+    Peer? peer;
+    for (final p in gFFI.groupModel.peers) {
+      if (p.id == user.deviceId) {
+        peer = p;
+        break;
+      }
+    }
+    peer ??= Peer.fromJson({'id': user.deviceId, 'platform': 'Windows'});
+    await UserPeerMenu(peer: peer).show(context, pos);
   }
 }

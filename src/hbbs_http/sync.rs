@@ -250,6 +250,12 @@ async fn start_hbbs_sync_async() {
                             config::Status::set("sysinfo_hash", "".to_owned());
                             log::info!("sysinfo required to forcely update");
                         }
+                        if let Some(v) = rsp.remove("no_outgoing") {
+                            Config::set_option(
+                                "bizdesk-no-outgoing".to_owned(),
+                                if v.as_bool().unwrap_or(false) { "Y" } else { "" }.to_owned(),
+                            );
+                        }
                         if let Some(conns)  = rsp.remove("disconnect") {
                                 if let Ok(conns) = serde_json::from_value::<Vec<i32>>(conns) {
                                     SENDER.lock().unwrap().send(conns).ok();

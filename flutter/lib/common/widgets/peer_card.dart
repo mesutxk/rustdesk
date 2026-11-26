@@ -1678,3 +1678,24 @@ Future<void> _editSharedDeviceNote(String id) async {
     );
   });
 }
+
+/// Kullanıcılar listesinde sağ tıkla açılan bağlantı menüsü (cihaz kartındakiyle aynı).
+class UserPeerMenu extends BasePeerCard {
+  UserPeerMenu({required Peer peer, Key? key})
+      : super(peer: peer, tab: PeerTabIndex.group, key: key);
+
+  @override
+  Future<List<MenuEntryBase<String>>> _buildMenuItems(
+      BuildContext context) async {
+    return await _buildConnectionMenuItems(context);
+  }
+
+  Future<void> show(BuildContext context, Offset pos) async {
+    await mod_menu.showMenu(
+      context: context,
+      position: RelativeRect.fromLTRB(pos.dx, pos.dy, pos.dx, pos.dy),
+      items: await _buildPopupMenuEntry(context),
+      elevation: 8,
+    );
+  }
+}

@@ -247,9 +247,20 @@ class _ConnectionPageState extends State<ConnectionPage>
 
   final _menuOpen = false.obs;
 
+  bool _noOutgoing = false;
+  Timer? _noOutgoingTimer;
+
+  Future<void> _refreshNoOutgoing() async {
+    final v = await bind.mainGetOption(key: 'bizdesk-no-outgoing') == 'Y';
+    if (mounted && v != _noOutgoing) setState(() => _noOutgoing = v);
+  }
+
   @override
   void initState() {
     super.initState();
+    _refreshNoOutgoing();
+    _noOutgoingTimer =
+        Timer.periodic(const Duration(seconds: 5), (_) => _refreshNoOutgoing());
     _allPeersLoader.init(setState);
     _idFocusNode.addListener(onFocusChanged);
     if (_idController.text.isEmpty) {
@@ -269,6 +280,7 @@ class _ConnectionPageState extends State<ConnectionPage>
 
   @override
   void dispose() {
+    _noOutgoingTimer?.cancel();
     _idController.dispose();
     windowManager.removeListener(this);
     _allPeersLoader.clear();
@@ -363,6 +375,7 @@ class _ConnectionPageState extends State<ConnectionPage>
       bool isViewCamera = false,
       bool isTerminal = false,
       bool isTcpTunneling = false}) {
+    if (_noOutgoing) return;
     var id = _idController.id;
     connect(context, id,
         isFileTransfer: isFileTransfer,
@@ -482,6 +495,7 @@ class _ConnectionPageState extends State<ConnectionPage>
                           autocorrect: false,
                           enableSuggestions: false,
                           keyboardType: TextInputType.visiblePassword,
+                          enabled: !_noOutgoing,
                           focusNode: fieldFocusNode,
                           style: const TextStyle(
                             fontFamily: 'WorkSans',
@@ -585,9 +599,11 @@ class _ConnectionPageState extends State<ConnectionPage>
                 SizedBox(
                   height: 28.0,
                   child: ElevatedButton(
-                    onPressed: () {
-                      onConnect();
-                    },
+                    onPressed: _noOutgoing
+                        ? null
+                        : () {
+                            onConnect();
+                          },
                     child: Text(translate("Connect")),
                   ),
                 ),

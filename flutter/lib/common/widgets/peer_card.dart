@@ -1690,6 +1690,9 @@ class UserPeerMenu extends BasePeerCard {
     return await _buildConnectionMenuItems(context);
   }
 
+  @override
+  void _update() {}
+
   Future<void> show(BuildContext context, Offset pos) async {
     await mod_menu.showMenu(
       context: context,

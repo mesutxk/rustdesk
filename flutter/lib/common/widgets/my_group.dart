@@ -242,6 +242,7 @@ class _MyGroupState extends State<MyGroup> {
       } else {
         selectedAccessibleItemName.value = '';
       }
+      gFFI.groupModel.pull(quiet: true);
     }, child: Obx(
       () {
         bool selected = !isSelectedDeviceGroup.value &&
@@ -306,12 +307,15 @@ class _MyGroupState extends State<MyGroup> {
   Widget _buildDeviceGroupItem(DeviceGroupPayload deviceGroup) {
     final name = deviceGroup.name;
     return InkWell(onTap: () {
+      final wasAgent = !isSelectedDeviceGroup.value &&
+          selectedAccessibleItemName.isNotEmpty;
       isSelectedDeviceGroup.value = true;
       if (selectedAccessibleItemName.value != name) {
         selectedAccessibleItemName.value = name;
       } else {
         selectedAccessibleItemName.value = '';
       }
+      if (wasAgent) gFFI.groupModel.pull(quiet: true);
     }, child: Obx(
       () {
         bool selected = isSelectedDeviceGroup.value &&

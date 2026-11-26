@@ -235,6 +235,9 @@ class GroupModel {
           'pageSize': pageSize.toString(),
           'accessible': '',
           'status': '1',
+          if (selectedAccessibleItemName.isNotEmpty &&
+              !isSelectedDeviceGroup.value)
+            'agent': selectedAccessibleItemName.value,
         };
         var uri = Uri(
             scheme: uri0.scheme,

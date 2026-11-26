@@ -373,7 +373,10 @@ class _PeersViewState extends State<_PeersView>
       );
     }
 
-    if (widget.peers.loadEvent != LoadEvent.recent) {
+    final agentRecent = widget.peers.loadEvent == LoadEvent.group &&
+        !gFFI.groupModel.isSelectedDeviceGroup.value &&
+        gFFI.groupModel.selectedAccessibleItemName.isNotEmpty;
+    if (widget.peers.loadEvent != LoadEvent.recent && !agentRecent) {
       switch (sortedBy) {
         case PeerSortType.remoteId:
           peers.sort((p1, p2) => p1.getId().compareTo(p2.getId()));

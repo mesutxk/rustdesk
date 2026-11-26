@@ -9,14 +9,13 @@ import 'package:get/get.dart';
 import 'dart:convert';
 import '../utils/http_service.dart' as http;
 
-const kFrequentName = 'Sık kullanılanlar';
-
 class GroupModel {
   final RxBool groupLoading = false.obs;
   final RxString groupLoadError = "".obs;
   final RxList<DeviceGroupPayload> deviceGroups = RxList.empty(growable: true);
   final RxList<UserPayload> users = RxList.empty(growable: true);
   final RxList<Peer> peers = RxList.empty(growable: true);
+  final RxList<Peer> recentPeers = RxList.empty(growable: true);
   final RxBool isSelectedDeviceGroup = false.obs;
   final RxString selectedAccessibleItemName = ''.obs;
   final RxString searchAccessibleItemNameText = ''.obs;
@@ -79,6 +78,7 @@ class GroupModel {
       return;
     }
     deviceGroups.value = tmpDeviceGroups;
+    await _getRecentPeers();
     // me first
     var index = tmpUsers
         .indexWhere((user) => user.name == gFFI.userModel.userName.value);
@@ -87,8 +87,7 @@ class GroupModel {
       tmpUsers.insert(0, user);
     }
     users.value = tmpUsers;
-    if (selectedAccessibleItemName.value != kFrequentName &&
-        !users.any((u) => u.name == selectedAccessibleItemName.value) &&
+    if (!users.any((u) => u.name == selectedAccessibleItemName.value) &&
         !deviceGroups.any((d) => d.name == selectedAccessibleItemName.value)) {
       selectedAccessibleItemName.value = '';
     }
@@ -238,9 +237,6 @@ class GroupModel {
           'pageSize': pageSize.toString(),
           'accessible': '',
           'status': '1',
-          if (selectedAccessibleItemName.isNotEmpty &&
-              !isSelectedDeviceGroup.value)
-            'agent': selectedAccessibleItemName.value,
         };
         var uri = Uri(
             scheme: uri0.scheme,
@@ -285,6 +281,28 @@ class GroupModel {
           '${translate('pull_group_failed_tip')}: ${translate(err.toString())}';
     }
     return false;
+  }
+
+  Future<void> _getRecentPeers() async {
+    try {
+      final base = Uri.parse("${await bind.mainGetApiServer()}/api/peers");
+      final uri = Uri(
+          scheme: base.scheme,
+          host: base.host,
+          port: base.port,
+          path: base.path,
+          queryParameters: {'agent': 'Sık kullanılanlar'});
+      final resp = await http.get(uri, headers: getHttpHeaders());
+      if (resp.statusCode != 200) return;
+      final json = jsonDecode(decode_http_response(resp));
+      if (json is Map && json['data'] is List) {
+        recentPeers.value = (json['data'] as List)
+            .map((p) => PeerPayload.toPeer(PeerPayload.fromJson(p)))
+            .toList();
+      }
+    } catch (e) {
+      debugPrint('get recent peers: $e');
+    }
   }
 
   Map<String, dynamic> _jsonDecodeResp(String body, int statusCode) {
@@ -354,6 +372,7 @@ class GroupModel {
     deviceGroups.clear();
     users.clear();
     peers.clear();
+    recentPeers.clear();
     selectedAccessibleItemName.value = '';
     await bind.mainClearGroup();
   }

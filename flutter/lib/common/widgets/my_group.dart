@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_hbb/common/hbbs/hbbs.dart';
 import 'package:flutter_hbb/common/widgets/login.dart';
 import 'package:flutter_hbb/common/widgets/peers_view.dart';
-import 'package:flutter_hbb/models/group_model.dart';
+import 'package:flutter_hbb/models/peer_model.dart';
 import 'package:flutter_hbb/models/state_model.dart';
 import 'package:get/get.dart';
 
@@ -200,12 +200,12 @@ class _MyGroupState extends State<MyGroup> {
         }
         return true;
       }).toList();
-      // Count occurrences of each displayNameOrName to detect duplicates
-      final displayNameCount = <String, int>{};
-      for (final u in userItems) {
-        final dn = u.displayNameOrName;
-        displayNameCount[dn] = (displayNameCount[dn] ?? 0) + 1;
-      }
+      final recentItems = gFFI.groupModel.recentPeers.where((p) {
+        if (searchAccessibleItemNameText.isEmpty) return true;
+        return _peerTitle(p)
+            .toLowerCase()
+            .contains(searchAccessibleItemNameText.value.toLowerCase());
+      }).toList();
       final deviceGroupItems = gFFI.groupModel.deviceGroups.where((p0) {
         if (searchAccessibleItemNameText.isNotEmpty) {
           return p0.name
@@ -216,19 +216,66 @@ class _MyGroupState extends State<MyGroup> {
       }).toList();
       listView(bool isPortrait) => ListView.builder(
           shrinkWrap: isPortrait,
-          itemCount: deviceGroupItems.length + userItems.length + 1,
-          itemBuilder: (context, index) => index == 0
-              ? _buildFrequentItem()
-              : index <= deviceGroupItems.length
-                  ? _buildDeviceGroupItem(deviceGroupItems[index - 1])
-                  : _buildUserItem(
-                      userItems[index - 1 - deviceGroupItems.length],
-                      displayNameCount));
+          itemCount: deviceGroupItems.length +
+              (recentItems.isEmpty ? 0 : recentItems.length + 1),
+          itemBuilder: (context, index) {
+            if (index < deviceGroupItems.length) {
+              return _buildDeviceGroupItem(deviceGroupItems[index]);
+            }
+            if (index == deviceGroupItems.length) return _buildRecentHeader();
+            return _buildRecentItem(
+                recentItems[index - deviceGroupItems.length - 1]);
+          });
       var maxHeight = max(MediaQuery.of(context).size.height / 6, 100.0);
       return Obx(() => stateGlobal.isPortrait.isFalse
           ? listView(false)
           : LimitedBox(maxHeight: maxHeight, child: listView(true)));
     });
+  }
+
+  String _peerTitle(Peer p) =>
+      p.alias.isNotEmpty ? p.alias : (p.hostname.isNotEmpty ? p.hostname : p.id);
+
+  Widget _buildRecentHeader() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 6),
+      child: Row(children: [
+        Icon(Icons.star_rounded, color: MyTheme.accent, size: 18)
+            .marginOnly(right: 6),
+        Text('Sık kullanılanlar',
+            style: const TextStyle(fontWeight: FontWeight.w600)),
+      ]),
+    );
+  }
+
+  Widget _buildRecentItem(Peer peer) {
+    return InkWell(
+      onTap: () => connect(context, peer.id),
+      child: Container(
+        decoration: BoxDecoration(
+          border: Border(
+              bottom: BorderSide(
+                  width: 0.7,
+                  color: Theme.of(context).dividerColor.withOpacity(0.1))),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 8,
+              height: 8,
+              decoration: BoxDecoration(
+                  color: peer.online ? Colors.green : Colors.grey,
+                  shape: BoxShape.circle),
+            ).marginOnly(left: 6, right: 10),
+            Expanded(
+                child: Tooltip(
+              message: '${_peerTitle(peer)} (${peer.id})',
+              child: Text(_peerTitle(peer), overflow: TextOverflow.ellipsis),
+            )),
+          ],
+        ).paddingSymmetric(vertical: 6),
+      ),
+    ).marginSymmetric(horizontal: 12);
   }
 
   Widget _buildUserItem(UserPayload user, Map<String, int> displayNameCount) {
@@ -246,7 +293,6 @@ class _MyGroupState extends State<MyGroup> {
       } else {
         selectedAccessibleItemName.value = '';
       }
-      gFFI.groupModel.pull(quiet: true);
     }, child: Obx(
       () {
         bool selected = !isSelectedDeviceGroup.value &&
@@ -308,51 +354,15 @@ class _MyGroupState extends State<MyGroup> {
     )).marginSymmetric(horizontal: 12).marginOnly(bottom: 6);
   }
 
-  Widget _buildFrequentItem() {
-    return InkWell(onTap: () {
-      isSelectedDeviceGroup.value = false;
-      selectedAccessibleItemName.value =
-          selectedAccessibleItemName.value == kFrequentName
-              ? ''
-              : kFrequentName;
-      gFFI.groupModel.pull(quiet: true);
-    }, child: Obx(() {
-      final selected = !isSelectedDeviceGroup.value &&
-          selectedAccessibleItemName.value == kFrequentName;
-      return Container(
-        decoration: BoxDecoration(
-          color: selected ? MyTheme.color(context).highlight : null,
-          border: Border(
-              bottom: BorderSide(
-                  width: 0.7,
-                  color: Theme.of(context).dividerColor.withOpacity(0.1))),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 20,
-              height: 20,
-              child: Icon(Icons.star_rounded, color: MyTheme.accent, size: 19),
-            ).marginOnly(right: 4),
-            Expanded(child: Text(kFrequentName)),
-          ],
-        ).paddingSymmetric(vertical: 4),
-      );
-    })).marginSymmetric(horizontal: 12).marginOnly(bottom: 6);
-  }
-
   Widget _buildDeviceGroupItem(DeviceGroupPayload deviceGroup) {
     final name = deviceGroup.name;
     return InkWell(onTap: () {
-      final wasAgent = !isSelectedDeviceGroup.value &&
-          selectedAccessibleItemName.isNotEmpty;
       isSelectedDeviceGroup.value = true;
       if (selectedAccessibleItemName.value != name) {
         selectedAccessibleItemName.value = name;
       } else {
         selectedAccessibleItemName.value = '';
       }
-      if (wasAgent) gFFI.groupModel.pull(quiet: true);
     }, child: Obx(
       () {
         bool selected = isSelectedDeviceGroup.value &&

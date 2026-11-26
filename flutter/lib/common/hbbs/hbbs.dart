@@ -32,9 +32,13 @@ class UserPayload {
   String? verifier;
   UserStatus status;
   bool isAdmin = false;
+  String deviceId = '';
+  bool online = false;
 
   UserPayload.fromJson(Map<String, dynamic> json)
-      : name = json['name'] ?? '',
+      : deviceId = json['device_id'] ?? '',
+        online = json['online'] == true,
+        name = json['name'] ?? '',
         displayName = json['display_name'] ?? '',
         avatar = json['avatar'] ?? '',
         email = json['email'] ?? '',

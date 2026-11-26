@@ -192,14 +192,20 @@ class _MyGroupState extends State<MyGroup> {
 
   Widget _buildLeftList() {
     return Obx(() {
-      final userItems = gFFI.groupModel.users.where((p0) {
-        if (searchAccessibleItemNameText.isNotEmpty) {
-          final search = searchAccessibleItemNameText.value.toLowerCase();
-          return p0.name.toLowerCase().contains(search) ||
-              p0.displayNameOrName.toLowerCase().contains(search);
-        }
-        return true;
-      }).toList();
+      final me = gFFI.userModel.userName.value;
+      final userItems = gFFI.groupModel.users.where((u) {
+        if (u.name == me) return false;
+        if (searchAccessibleItemNameText.isEmpty) return true;
+        final search = searchAccessibleItemNameText.value.toLowerCase();
+        return u.name.toLowerCase().contains(search) ||
+            u.displayNameOrName.toLowerCase().contains(search);
+      }).toList()
+        ..sort((a, b) {
+          if (a.online != b.online) return a.online ? -1 : 1;
+          return a.displayNameOrName
+              .toLowerCase()
+              .compareTo(b.displayNameOrName.toLowerCase());
+        });
       final recentItems = gFFI.groupModel.recentPeers.where((p) {
         if (searchAccessibleItemNameText.isEmpty) return true;
         return _peerTitle(p)
@@ -214,18 +220,19 @@ class _MyGroupState extends State<MyGroup> {
         }
         return true;
       }).toList();
-      listView(bool isPortrait) => ListView.builder(
-          shrinkWrap: isPortrait,
-          itemCount: deviceGroupItems.length +
-              (recentItems.isEmpty ? 0 : recentItems.length + 1),
-          itemBuilder: (context, index) {
-            if (index < deviceGroupItems.length) {
-              return _buildDeviceGroupItem(deviceGroupItems[index]);
-            }
-            if (index == deviceGroupItems.length) return _buildRecentHeader();
-            return _buildRecentItem(
-                recentItems[index - deviceGroupItems.length - 1]);
-          });
+      final rows = <Widget>[
+        ...deviceGroupItems.map(_buildDeviceGroupItem),
+        if (recentItems.isNotEmpty) ...[
+          _buildSectionHeader(Icons.star_rounded, 'Sık kullanılanlar'),
+          ...recentItems.map(_buildRecentItem),
+        ],
+        if (userItems.isNotEmpty) ...[
+          _buildSectionHeader(Icons.people_alt_rounded, 'Kullanıcılar'),
+          ...userItems.map(_buildUserRow),
+        ],
+      ];
+      listView(bool isPortrait) => ListView(
+          shrinkWrap: isPortrait, children: rows);
       var maxHeight = max(MediaQuery.of(context).size.height / 6, 100.0);
       return Obx(() => stateGlobal.isPortrait.isFalse
           ? listView(false)
@@ -236,16 +243,57 @@ class _MyGroupState extends State<MyGroup> {
   String _peerTitle(Peer p) =>
       p.alias.isNotEmpty ? p.alias : (p.hostname.isNotEmpty ? p.hostname : p.id);
 
-  Widget _buildRecentHeader() {
+  Widget _buildSectionHeader(IconData icon, String title) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 10, 12, 6),
       child: Row(children: [
-        Icon(Icons.star_rounded, color: MyTheme.accent, size: 18)
-            .marginOnly(right: 6),
-        Text('Sık kullanılanlar',
-            style: const TextStyle(fontWeight: FontWeight.w600)),
+        Icon(icon, color: MyTheme.accent, size: 18).marginOnly(right: 6),
+        Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
       ]),
     );
+  }
+
+  Widget _buildUserRow(UserPayload user) {
+    final online = user.online;
+    return InkWell(
+      onTap: () {
+        if (online && user.deviceId.isNotEmpty) {
+          connect(context, user.deviceId);
+        } else {
+          showToast('${user.displayNameOrName} çevrimdışı');
+        }
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          border: Border(
+              bottom: BorderSide(
+                  width: 0.7,
+                  color: Theme.of(context).dividerColor.withOpacity(0.1))),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 8,
+              height: 8,
+              decoration: BoxDecoration(
+                  color: online ? Colors.green : Colors.grey,
+                  shape: BoxShape.circle),
+            ).marginOnly(left: 6, right: 10),
+            Expanded(
+                child: Text(user.displayNameOrName,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                        color: online
+                            ? null
+                            : Theme.of(context).hintColor.withOpacity(0.8)))),
+            Text(online ? 'çevrimiçi' : 'çevrimdışı',
+                style: TextStyle(
+                    fontSize: 11,
+                    color: online ? Colors.green : Theme.of(context).hintColor)),
+          ],
+        ).paddingSymmetric(vertical: 6),
+      ),
+    ).marginSymmetric(horizontal: 12);
   }
 
   Widget _buildRecentItem(Peer peer) {

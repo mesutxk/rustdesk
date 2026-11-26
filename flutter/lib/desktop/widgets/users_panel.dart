@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_hbb/common.dart';
 import 'package:flutter_hbb/common/hbbs/hbbs.dart';
+import 'package:flutter_hbb/desktop/widgets/user_chat.dart';
 import 'package:get/get.dart';
 
 class UsersPanel extends StatefulWidget {
@@ -14,19 +15,25 @@ class UsersPanel extends StatefulWidget {
 
 class _UsersPanelState extends State<UsersPanel> {
   Timer? _timer;
+  Timer? _chatTimer;
 
   @override
   void initState() {
     super.initState();
     gFFI.groupModel.pull(force: false, quiet: true);
+    UserChat.pollUnread();
     _timer = Timer.periodic(const Duration(seconds: 20), (_) {
       if (mounted) gFFI.groupModel.pull(quiet: true);
+    });
+    _chatTimer = Timer.periodic(const Duration(seconds: 4), (_) {
+      if (mounted && gFFI.userModel.isLogin) UserChat.pollUnread();
     });
   }
 
   @override
   void dispose() {
     _timer?.cancel();
+    _chatTimer?.cancel();
     super.dispose();
   }
 
@@ -66,17 +73,19 @@ class _UsersPanelState extends State<UsersPanel> {
     });
   }
 
+  void _connect(UserPayload user) {
+    if (user.online && user.deviceId.isNotEmpty) {
+      connect(context, user.deviceId);
+    } else {
+      showToast('${user.displayNameOrName} çevrimdışı');
+    }
+  }
+
   Widget _row(BuildContext context, UserPayload user) {
     final online = user.online;
     final hint = Theme.of(context).hintColor;
     return InkWell(
-      onTap: () {
-        if (online && user.deviceId.isNotEmpty) {
-          connect(context, user.deviceId);
-        } else {
-          showToast('${user.displayNameOrName} çevrimdışı');
-        }
-      },
+      onTap: () => UserChat.open(context, user),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
         child: Row(
@@ -100,6 +109,26 @@ class _UsersPanelState extends State<UsersPanel> {
                           fontSize: 10.5,
                           color: online ? Colors.green : hint)),
                 ],
+              ),
+            ),
+            Obx(() {
+              final n = UserChat.unread[user.name] ?? 0;
+              if (n == 0) return const SizedBox.shrink();
+              return Container(
+                margin: const EdgeInsets.only(right: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                decoration: BoxDecoration(
+                    color: Colors.red, borderRadius: BorderRadius.circular(9)),
+                child: Text('$n',
+                    style: const TextStyle(color: Colors.white, fontSize: 11)),
+              );
+            }),
+            Tooltip(
+              message: 'Uzak bağlantı',
+              child: InkWell(
+                onTap: () => _connect(user),
+                child: Icon(Icons.desktop_windows_outlined,
+                    size: 16, color: online ? null : hint),
               ),
             ),
           ],
